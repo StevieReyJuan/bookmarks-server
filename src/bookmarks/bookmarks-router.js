@@ -3,14 +3,28 @@ const { v4: uuid } = require('uuid');
 const { isWebUri } = require('valid-url');
 const logger = require('../logger');
 const { bookmarks } = require('../store');
+const BookmarksService = require('./bookmarks-service');
 
 const bookmarksRouter = express.Router();
 const bodyParser = express.json();
 
+const serializeBookmark = bookmark => ({
+    id: bookmark.id,
+    title: bookmark.title,
+    url: bookmark.url,
+    description: bookmark.description,
+    rating: Number(bookmark.rating),
+})
+
 bookmarksRouter
     .route('/bookmarks')
-    .get((req, res) => {
-        res.json(bookmarks);
+    .get((req, res, next) => {
+        const knexInstance = req.app.get('db')
+        BookmarksService.getAllBookmarks(knexInstance)
+            .then(bookmarks => {
+                res.json(bookmarks.map(serializeBookmark))
+            })
+            .catch(next)
     })
     .post(bodyParser, (req, res) => {
         const { title, url, rating, desc } = req.body;
@@ -48,20 +62,21 @@ bookmarksRouter
 
     bookmarksRouter
         .route('/bookmarks/:bookmark_id')
-        .get((req, res) => {
+        .get((req, res, next) => {
             const { bookmark_id } = req.params;
+            const knexInstance = req.app.get('db')
 
-            const bookmark = bookmarks.find(b => 
-                b.id === bookmark_id);
-
-            if(!bookmark) {
-                logger.error(`Bookmark with id ${bookmark_id} not found.`)
-                return res
-                    .status(404)
-                    .send('Bookmark not found')
-            }
-
-            res.json(bookmark);
+            BookmarksService.getById(knexInstance, bookmark_id)
+                .then(bookmark => {
+                    if(!bookmark) {
+                        logger.error(`Bookmark with id ${bookmark_id} not found.`)
+                        return res
+                            .status(404)
+                            .send('Bookmark not found')
+                    }
+                    res.json(serializeBookmark(bookmark));
+                })
+                .catch(next)
         })
         .delete((req, res) => {
             const { bookmark_id } = req.params;
