@@ -5,10 +5,10 @@ create table bookmarks (
     title TEXT NOT NULL,
     url TEXT NOT NULL,
     rating INTEGER DEFAULT 3,
-    desc text
+    description text
 );
 
-insert into bookmarks (title, url, rating, desc)
+insert into bookmarks (title, url, rating, description)
 values
     ('Google', 'www.google.com', 5, 'A search engine'),
     ('Gmail', 'www.gmail.com', 5 'Google Email'),
